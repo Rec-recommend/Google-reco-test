@@ -22,22 +22,20 @@ for index, row in movies_df.iterrows():
 # =====================================================
 # store table in a dataframe
 # -----------------------------------------------------
-def prepare_df(table):
-    df = pd.DataFrame(table['data'])
-    df.columns = table['column_names']
+def prepare_df():
+    df = pd.read_csv('./ratings.1.csv')
     return df
-
 
 # =====================================================
 # load data from mysql and train the model
 # -----------------------------------------------------
-tenant = TenantDbHandler(tenant_db_name)
-items_table = tenant.get_pivot_table('ratings')
-df = prepare_df(items_table)
+# tenant = TenantDbHandler(tenant_db_name)
+# items_table = tenant.get_pivot_table('ratings')
+df = prepare_df()
 
 
 line_format = 'user item rating'
-sim_options = {'name': 'pearson_baseline', 'user_based': True, 'min_support': 7}
+sim_options = {'name': 'cosine', 'user_based': True}
 
 cfr = CollborativeRecommender(sim_options, df, line_format)
 
@@ -45,21 +43,30 @@ cfr = CollborativeRecommender(sim_options, df, line_format)
 # =====================================================
 # get users recommendations and store them in mongodb
 # -----------------------------------------------------
-users = df['end_user_id'].unique()
-mongo_client = MongoClient()
-mongo_db = mongo_client[tenant_db_name]
-count = 0
-recos = []
-for user in users:
-    res = cfr.get_recommendations(user)
-    recos.append({'user_id':int(user), 'recommendations':[i[0] for i in res]})
-    count += 1
-    if count > 100000:
-        mongo_db.recommendations.insert_many(recos)
-        count = 0
-        recos = []
+# users = df['end_user_id'].unique()
+# mongo_client = MongoClient()
+# mongo_db = mongo_client[tenant_db_name]
+# count = 0
+# recos = []
+# for user in users:
+#     res = cfr.get_recommendations(user)
+#     recos.append({'user_id':int(user), 'items':[i[0] for i in res]})
+#     count += 1
+#     if count > 100000:
+#         mongo_db.recommendations.insert_many(recos)
+#         count = 0
+#         recos = []
 
-# # =====================================================
+users = ['2']
+
+for user in users:
+	res = cfr.get_recommendations(user)
+	for movie in res:
+		print(movieID_to_name[movie[0]] , " ---- " , movie[1])
+	print("--------------------------------------")
+
+
+# =====================================================
 
 
 
@@ -81,4 +88,3 @@ for user in users:
 # 	for movie in res:
 # 		print(movieID_to_name[movie[0]] , " ---- " , movie[1])
 # 	print("--------------------------------------")
-
